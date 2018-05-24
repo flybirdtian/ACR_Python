@@ -12,6 +12,7 @@ class FivePointsAlgorithmBase(object):
     def getPose(self, refImg : np.ndarray, curImg: np.ndarray, K: np.ndarray) -> (Pose3, np.ndarray, np.ndarray):
         pass
 
+
 class FivePointsAlgorithm_CV(FivePointsAlgorithmBase):
     def __init__(self):
         super(FivePointsAlgorithm_CV, self).__init__()
@@ -23,6 +24,31 @@ class FivePointsAlgorithm_CV(FivePointsAlgorithmBase):
         points, R, t, mask = cv2.recoverPose(E, ref_pts, cur_pts, mask=mask)
         pose = Pose3.fromRt(R, t)
         return pose, ref_pts, cur_pts
+
+class FivePointsAlgorithm_Nghia(FivePointsAlgorithmBase):
+    def __init__(self):
+        super(FivePointsAlgorithm_Nghia, self).__init__()
+
+        import RelativePose5Point
+        self._fivePointsAlg = RelativePose5Point.RelativePose5Point()
+
+    def getPose(self, refImg: np.ndarray, curImg: np.ndarray, K: np.ndarray) -> (Pose3, np.ndarray, np.ndarray):
+        ref_pts, cur_pts = SIFTFeature.detectAndMatch(image1=refImg, image2=curImg)  # type: np.ndarray, np.ndarray
+
+        ref_pts_list = list(ref_pts.flatten())
+        cur_pts_list = list(cur_pts.flatten())
+        K_list = list(K.flatten())
+
+        print(ref_pts[:5])
+        print(ref_pts_list[:10])
+
+        R, t = self._fivePointsAlg.calcRP(ref_pts_list, cur_pts_list, K_list)
+        R = np.array(R).reshape(3, 3)
+        t = np.array(t)
+
+        pose_ref_to_cur = Pose3.fromRt(R, t)
+        return pose_ref_to_cur, ref_pts, cur_pts
+
 
 def testFivePoints_CV():
     print("Test FivePoints Algorithm in OpenCV:")
