@@ -8,6 +8,7 @@ import os
 import cv2
 import json
 
+
 class ACRBisection(object):
     def __init__(self, camera, platform):
         self.camera = camera  # type: CameraBase
@@ -23,13 +24,13 @@ class ACRBisection(object):
         self.stopAFD = 0.3
         self.maxStep = 30  # max step number
 
-        self.init_S = 30   # initial translation size s
+        self.init_S = 15   # initial translation size s
 
         # current condition and data
         self.step = 0
         self.curPose = Pose3()
         self.curAFD = 0
-        self.cur_S = 30
+        self.cur_S = 15
 
         # reference image
         self.refImage = np.ndarray([1, 1, 3], np.uint8)
@@ -82,7 +83,9 @@ class ACRBisection(object):
 
         pose_file = os.path.join(directory, "pose_{}.json".format(stepNum))
         with open(pose_file, 'w') as f:
-            pose_dic = {"curPose": cur_pose.toSE3().tolist(), "cur_AFD": cur_AFD, "cur_S": cur_S}
+            t, axis, angle = cur_pose.to_t_aixsAngle()
+            pose_dic = {"curPose": cur_pose.toSE3().tolist(), "cur_AFD": cur_AFD, "cur_S": cur_S,
+                        "cur_angle": angle, "cur_t": t.tolist()}
             pose_json = json.dumps(pose_dic, indent=2, separators=(',', ': '))
             f.write(pose_json)
 
@@ -144,9 +147,11 @@ def test():
 
     initPose = Pose3().from6D(np.array([-500, 500, -1000, 0, 0, 0]))  # sofa
 
+    #X = Pose3.fromCenter6D([0, 0, 0, 1, 2, 3])
+    X = Pose3.fromCenter6D([0, 0, 0, 0, 0, 0])
     unrealbase = UnrealCVEnv(init_pose=initPose)
     camera = UnrealCVCamera(unreal_env=unrealbase, cameraCalib=CameraCalibration())  # type: CameraBase
-    platform = PlatformUnrealCV(unreal_env=unrealbase)
+    platform = PlatformUnrealCV(unreal_env=unrealbase, X=X)
     myACR = ACRBisection(camera=camera, platform=platform)
     myACR.openAll()
 
@@ -159,8 +164,6 @@ def test():
     if not os.path.exists(directory):
         os.mkdir(directory)
 
-    # myACR.writeHandInfo(directory, -1, rots, trans)
-
     img_path = os.path.join(directory, "rgb_ref.png")
     img_depth_path = os.path.join(directory, "depth_ref.png")
     cv2.imwrite(img_path, ref_image)
@@ -169,6 +172,7 @@ def test():
     myACR.initSettings(data_dir=directory, refImage=ref_image)
     # input('Press to continue...')
     myACR.relocation()
+
 
 if __name__ == "__main__":
     test()

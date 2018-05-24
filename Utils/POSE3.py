@@ -151,8 +151,9 @@ class Pose3(object):
         :param angle: angle, in degree
         :return: Pose3
         """
+        t = np.float32(t)
         angle = math.radians(angle)
-        R = transforms3d.axangles.axangle2mat(axis,angle)
+        R = transforms3d.axangles.axangle2mat(axis, angle)
         R = np.asarray(R)
         return cls.fromRt(R, t.T)
 
