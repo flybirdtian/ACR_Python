@@ -128,9 +128,6 @@ class ACRBisection(object):
             self.curAFD = self.computeAFD(match_points_ref, match_points_cur)
             self.curImage = image
 
-            if self.stopCondition():
-                break
-
             # Bisection
             t, axis, angle = pose.to_t_aixsAngle()
             lastT, lastAxis, lastAngle = self.lastPose.to_t_aixsAngle()
@@ -141,6 +138,9 @@ class ACRBisection(object):
                 self.cur_angle_bound /= 2.0
                 if self.cur_angle_bound < self.stopAngle:
                     self.cur_angle_bound = self.stopAngle
+
+            if self.stopCondition():
+                break
 
             # moving platform
             eye_pose_guess = self.poseWithScale(pose, self.cur_S)
@@ -197,7 +197,7 @@ def test2():
     from MotionPlatform.PlatformUnrealCV import PlatformUnrealCV
     from UnrealCVBase.UnrealCVEnv import UnrealCVEnv
 
-    initPose = Pose3().from6D(np.array([0, 1300, 1000, 0, 0, 0]))
+    initPose = Pose3().from6D(np.array([0, 1300, 1000, 0, 0, 0]))  # center of the room
 
     X = Pose3.fromCenter6D([0, 0, 0, 0, 0, 0])
     unrealbase = UnrealCVEnv(init_pose=initPose)
@@ -205,7 +205,7 @@ def test2():
     platform = PlatformUnrealCV(unreal_env=unrealbase, X=X)
     myACR = ACRBisection(camera=camera, platform=platform)
     myACR.openAll()
-    pose = Pose3.fromCenter6D([-50, 30, 60, 3, -2.6, -0.2])
+    pose = Pose3.fromCenter6D([-50, 30, 60, 0.7, -0.5, -0.2])
 
     for i in range(0, 10):
         directory = r"C:\Users\tianf\Research\temp\data\bigScene\test2\{}".format(i+1)
