@@ -87,7 +87,7 @@ class ACRBisection(object):
             t_m, axis_m, angle_m = motion.to_t_aixsAngle()
             t_m = np.linalg.norm(t_m)
 
-            pose_dic = {"stopAngle":self.stopAngle, "stop_S": self.stop_S, "stopAFD": self.stopAFD,
+            pose_dic = {"step": self.step, "stopAngle":self.stopAngle, "stop_S": self.stop_S, "stopAFD": self.stopAFD,
                         "maxStep": self.maxStep, "AngleBound": self.cur_angle_bound,
                         "cur_AFD": self.curAFD, "cur_angle": angle, "cur_S": self.cur_S,
                         "motion_angle": angle_m, "motion_t": t_m,
@@ -205,10 +205,10 @@ def test2():
     platform = PlatformUnrealCV(unreal_env=unrealbase, X=X)
     myACR = ACRBisection(camera=camera, platform=platform)
     myACR.openAll()
-    pose = Pose3.fromCenter6D([-50, 30, 60, 0.5, -1, -0.5])
+    pose = Pose3.fromCenter6D([-50, 30, 60, 3, -2.6, -0.2])
 
     for i in range(0, 10):
-        directory = "D:/temp/acr/big5/{}".format(i+1)
+        directory = r"C:\Users\tianf\Research\temp\data\bigScene\test2\{}".format(i+1)
         if not os.path.exists(directory):
             os.mkdir(directory)
 
