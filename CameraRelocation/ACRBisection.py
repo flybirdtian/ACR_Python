@@ -197,7 +197,7 @@ def test2():
     from MotionPlatform.PlatformUnrealCV import PlatformUnrealCV
     from UnrealCVBase.UnrealCVEnv import UnrealCVEnv
 
-    initPose = Pose3().from6D(np.array([0, 1300, 1000, 0, 0, 0]))  # center of the room
+    initPose = Pose3.from6D(np.array([0, 1300, 1000, 0, 0, 0]))  # center of the room
 
     X = Pose3.fromCenter6D([0, 0, 0, 0, 0, 0])
     unrealbase = UnrealCVEnv(init_pose=initPose)
