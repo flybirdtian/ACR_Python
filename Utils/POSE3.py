@@ -37,7 +37,7 @@ class Pose3(object):
         :return:
         """
         assert type(P) == Pose3
-        return Pose3( np.dot(self.rotation(), P.rotation()),  P.center() +  np.dot(P.rotation().T, self.center()))
+        return Pose3(np.dot(self.rotation(), P.rotation()),  P.center() +  np.dot(P.rotation().T, self.center()))
 
     def inverse(self):
         return Pose3(self.rotation().T, -( np.dot( self.rotation(), self.center())))
@@ -88,6 +88,12 @@ class Pose3(object):
             axis = -1 * axis
         angle = math.degrees(angle)
         return t, axis, angle
+
+    def frobeniusNorm34(self):
+        R, t = self.toRt()
+        Rt34 = np.hstack((R.reshape(3, 3), t.reshape(3, 1)))
+        f = np.linalg.norm(Rt34, 'fro')
+        return f
 
     def frobeniusNorm(self):
         t_se3 = self.toSE3()
@@ -159,11 +165,69 @@ class Pose3(object):
 
     @classmethod
     def fromSE3(cls, se3):
-        se3mat = np.matrix(se3) # type: np.matrix
+        se3mat = np.matrix(se3)  # type: np.matrix
         R = se3mat[0:3, 0:3]
         t = np.array(se3mat[0:3, 3]).ravel()
         return cls.fromRt(R,t)
 
+    @classmethod
+    def distance(cls, pose1, pose2):
+        R1, t1 = pose1.toRt()
+        R2, t2 = pose2.toRt()
+
+        R_diff = R1 * np.matrix.getI(R2)
+        t_diff = t1 - t2
+        axis, angle = SO3_2_so3(R_diff)
+
+        angle_distance = math.degrees(angle)
+        t_distance = np.linalg.norm(t_diff)
+
+        return angle_distance, t_distance
+
+
+def skew(vector3):
+    """
+    this function returns a numpy array with the skew symmetric cross product matrix for vector.
+    the skew symmetric cross product matrix is defined such that
+    np.cross(a, b) = np.dot(skew(a), b)
+
+    :param vector3: An array like 3d-vector to create the skew symmetric cross product matrix for
+    :return: A numpy array of the skew symmetric cross product vector
+    """
+    if isinstance(vector3, np.ndarray):
+        return np.array([[0, -vector3.item(2), vector3.item(1)],
+                         [vector3.item(2), 0, -vector3.item(0)],
+                         [-vector3.item(1), vector3.item(0), 0]])
+    else:
+        return np.array([[0, -vector3[2], vector3[1]],
+                         [vector3[2], 0, -vector3[0]],
+                         [-vector3[1], vector3[0], 0]])
+
+
+def SO3_2_so3(R):
+    '''
+    SO(3)->so(3)
+    see: https://en.wikipedia.org/wiki/Axis%E2%80%93angle_representation
+    :param R: Rotation matrix
+    :return: angle in radian, axis is an unit vector
+    '''
+    angle = math.acos((np.matrix.trace(R) - 1) / 2)
+    axis = 1 / 2*math.sin(angle) * np.asarray([R[2, 1] - R[1, 2], R[0, 2] - R[2, 0], R[1, 0] - R[0, 1]])
+    return axis, angle
+
+
+def so3_2_SO3(axis, angle):
+    '''
+    so(3)->SO(3)
+    see: https://en.wikipedia.org/wiki/Axis%E2%80%93angle_representation
+    :param axis: axis of rotation in axis-angle representation
+    :param angle: angle of rotation in raidan
+    :return: rotation matrix in SO(3)
+    '''
+    K = skew(axis)
+    I = np.eye(3)
+    R = I + math.sin(angle) * K + (1 - math.cos(angle)) * K * K
+    return R
 
 """
 Rotation transform
