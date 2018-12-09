@@ -14,13 +14,13 @@ class UnrealCVEnv(object):
         self.init_pose = init_pose
         self.client = unrealcv.Client(('127.0.0.1', 9000))
         self.cam_id = 0
-        self.cam = dict(position=[0, 0, 0], rotation=[0, 0, 0])
+        self.cam = dict(position=[0, 0, 0], rotation=[0, 0, 0])  # center 6D representation
 
         import tempfile
         self.temp_dir = tempfile.mkdtemp()
 
     def resetPose(self):
-        self.set_pose(*self.init_pose.toCenter6D())
+        self.set_pose_center6D(*self.init_pose.toCenter6D())
 
     def isConnected(self) -> bool:
         return self.client.isconnected()
@@ -37,7 +37,7 @@ class UnrealCVEnv(object):
             self.client.connect()
             print(self.client.isconnected())
 
-        self.set_pose(*self.init_pose.toCenter6D())
+        self.set_pose_center6D(*self.init_pose.toCenter6D())
 
         return self.isConnected()
 
@@ -112,9 +112,13 @@ class UnrealCVEnv(object):
 
         return im_rgb, im_depth
 
-    def get_pose(self):
+    def get_pose_center6D(self):
         pos = self.get_position() + self.get_rotation()
         return np.float32(pos)
+
+    def get_pose(self):
+        pose = self.get_position() + self.get_rotation()
+        return Pose3.fromCenter6D(pose)
 
     def get_position(self):
         return self.cam['position']
@@ -161,31 +165,33 @@ class UnrealCVEnv(object):
         print("CMD:{}".format(cmd))
         self.client.request(cmd)
 
-    def set_pose(self, x, y, z, roll, yaw, pitch):
+    def set_pose_center6D(self, x, y, z, roll, yaw, pitch):
         self.set_position(x, y, z)
         self.set_rotation(roll, yaw, pitch)
+
+    def set_pose(self, pose: Pose3):
+        x, y, z, roll, yaw, pitch = pose.toCenter6D()
+        self.set_pose_center6D(x, y, z, roll, yaw, pitch)
 
     def move_relative_pose_eye(self, RP):
         print("In move_relative_pose_eye, the relative pose is:")
         RP.debug()
 
-        P_CUR = Pose3.fromCenter6D(self.get_pose())
-
+        P_CUR = self.get_pose()
         P_TAR = RP.compose(P_CUR)
 
         tar_pose = P_TAR.toCenter6D()
-        print("Tar_pose in move eye:{}".format(tar_pose))
-        self.set_pose(*tar_pose)
+        print("Target Pose in move eye:{}".format(tar_pose))
+        self.set_pose_center6D(*tar_pose)
         return True
 
     def move_relative_pose_hand(self, RP):
         print("MOVE relative pose with hand in ACRBaseUnreal")
 
         X_6D = [10, 10, 10, 8.0416, 9.2526, 8.0416]
-        XH2E = Pose3().from6D(X_6D)
+        XH2E = Pose3.from6D(X_6D)
 
-        # Eye = Pose3()
-        Eye = Pose3().fromCenter6D(self.get_pose())
+        Eye = self.get_pose()
 
         Hand = XH2E.inverse().compose(Eye)
         Hand2 = RP.compose(Hand)
@@ -199,7 +205,7 @@ class UnrealCVEnv(object):
 
         tar_pose_move_hand = Eye2.toCenter6D()
 
-        self.set_pose(*tar_pose_move_hand)
+        self.set_pose_center6D(*tar_pose_move_hand)
         return True
 
 

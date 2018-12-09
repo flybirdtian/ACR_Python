@@ -16,7 +16,7 @@ class ACRD(object):
         self.platform = platform  # type: PlatformBase
 
         # damp the computed rotation and translation
-        self.dampRatio = 0.8
+        self.dampRatio = 1
 
         # stop condition parameters
         self.stopAngle = 0.1

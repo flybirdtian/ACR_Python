@@ -157,3 +157,4 @@ class ACRBisection(object):
         motion = Pose3()
         self.writeInfo(motion)
         return self.step - 1  # last step, no motion happend
+
